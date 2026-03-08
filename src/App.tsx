@@ -4,7 +4,19 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
-import Dashboard from "./pages/Dashboard";
+import DashboardLayout from "./pages/DashboardLayout";
+import DashboardHome from "./pages/DashboardHome";
+import MarketsPage from "./pages/MarketsPage";
+import ChartsPage from "./pages/ChartsPage";
+import AIEnginePage from "./pages/AIEnginePage";
+import StrategiesPage from "./pages/StrategiesPage";
+import JournalPage from "./pages/JournalPage";
+import PortfolioPage from "./pages/PortfolioPage";
+import SignalsPage from "./pages/SignalsPage";
+import CommunityPage from "./pages/CommunityPage";
+import MarketplacePage from "./pages/MarketplacePage";
+import AcademyPage from "./pages/AcademyPage";
+import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -17,7 +29,20 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/dashboard/*" element={<Dashboard />} />
+          <Route path="/dashboard" element={<DashboardLayout />}>
+            <Route index element={<DashboardHome />} />
+            <Route path="markets" element={<MarketsPage />} />
+            <Route path="charts" element={<ChartsPage />} />
+            <Route path="ai" element={<AIEnginePage />} />
+            <Route path="strategies" element={<StrategiesPage />} />
+            <Route path="journal" element={<JournalPage />} />
+            <Route path="portfolio" element={<PortfolioPage />} />
+            <Route path="signals" element={<SignalsPage />} />
+            <Route path="community" element={<CommunityPage />} />
+            <Route path="marketplace" element={<MarketplacePage />} />
+            <Route path="academy" element={<AcademyPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+          </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
