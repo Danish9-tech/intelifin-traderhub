@@ -23,7 +23,7 @@ export default function SettingsPage() {
   const [twoFa, setTwoFa] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
   const [theme, setTheme] = useState("dark");
-  const apiKey = "qt_live_a8f2k9d3m1p7x4w6b5n0c2e8";
+  const apiKey = "Managed securely on backend";
 
   const saveProfile = () => toast({ title: "Profile saved!", description: `Name: ${name}, Email: ${email}` });
   const toggleNotif = (key: keyof typeof notifications) => {
@@ -202,7 +202,7 @@ export default function SettingsPage() {
                 <div>
                   <p className="text-sm font-medium text-foreground">Production Key</p>
                   <p className="text-xs font-mono-num text-muted-foreground mt-1">
-                    {showApiKey ? apiKey : "qt_live_****...****8f2a"}
+                    {showApiKey ? apiKey : "server_managed_****"}
                   </p>
                 </div>
                 <span className="px-2 py-0.5 text-xs rounded bg-profit/10 text-profit">Active</span>

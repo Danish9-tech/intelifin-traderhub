@@ -1,73 +1,84 @@
-# Welcome to your Lovable project
+# InteliFin TraderHub
 
-## Project info
+TraderHub is now a full-stack MVP built with React + Vite on the frontend and Express + SQLite on the backend.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## MVP features implemented
 
-## How can I edit this code?
+- Email/password authentication with session tokens
+- Protected dashboard routes by authenticated user
+- Live crypto market feed (CoinGecko integration)
+- Persistent portfolio holdings and summary
+- Persistent trading journal entries
+- Persistent alerts/signals management
+- AI chat endpoint with OpenAI integration (fallback mode when no key is set)
+- Security controls: input validation, helmet, CORS, rate limiting, audit logs
+- Health endpoint for monitoring: `GET /api/health`
 
-There are several ways of editing your application.
+## Tech stack
 
-**Use Lovable**
+- Frontend: React, TypeScript, Vite, React Query, Tailwind
+- Backend: Express, TypeScript, SQLite (`sqlite3` + `sqlite`), Zod validation
+- Tests: Vitest, Testing Library, Supertest
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Local development
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+This starts:
+- Frontend at `http://localhost:8080`
+- Backend at `http://localhost:4000`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Vite proxies `/api` requests to the backend.
 
-**Use GitHub Codespaces**
+## Environment variables
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Create a `.env` file in the repository root:
 
-## What technologies are used for this project?
+```env
+PORT=4000
+DB_PATH=server/data/traderhub.db
+CLIENT_ORIGIN=http://localhost:8080
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4o-mini
+```
 
-This project is built with:
+If `OPENAI_API_KEY` is not set, the AI endpoint returns a safe fallback response.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Scripts
 
-## How can I deploy this project?
+- `npm run dev` - run client and server together
+- `npm run dev:client` - run frontend only
+- `npm run dev:server` - run backend only
+- `npm run start:server` - start backend without watcher
+- `npm run build` - frontend production build
+- `npm run test` - run tests
+- `npm run lint` - run ESLint
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## API overview
 
-## Can I connect a custom domain to my Lovable project?
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
+- `GET /api/markets`
+- `GET/POST/DELETE /api/portfolio/holdings`
+- `GET /api/portfolio/summary`
+- `GET/POST/DELETE /api/journal`
+- `GET/POST /api/alerts`
+- `PATCH /api/alerts/:id/dismiss`
+- `DELETE /api/alerts/:id`
+- `POST /api/ai/chat`
+- `GET /api/health`
 
-Yes, you can!
+## Deployment artifacts
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+- `Dockerfile` for containerized app runtime
+- `docker-compose.yml` for local orchestration
+- GitHub Actions workflow in `.github/workflows/ci.yml`
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Notes
+
+There are pre-existing lint findings in legacy UI files unrelated to this MVP; tests and build should still run.

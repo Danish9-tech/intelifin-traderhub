@@ -50,8 +50,8 @@ export default function LandingPage() {
             ))}
           </div>
           <div className="flex items-center gap-3">
-            <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Log in</Link>
-            <Link to="/dashboard" className="px-4 py-2 text-sm font-medium rounded-lg gradient-primary text-primary-foreground hover:opacity-90 transition-opacity glow-primary">
+            <Link to="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Log in</Link>
+            <Link to="/login" className="px-4 py-2 text-sm font-medium rounded-lg gradient-primary text-primary-foreground hover:opacity-90 transition-opacity glow-primary">
               Start Trading
             </Link>
           </div>
@@ -83,7 +83,7 @@ export default function LandingPage() {
             </motion.p>
 
             <motion.div variants={fadeUp} custom={3} className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link to="/dashboard" className="group px-8 py-3.5 rounded-xl gradient-primary text-primary-foreground font-semibold text-base glow-primary hover:opacity-90 transition-all flex items-center gap-2">
+              <Link to="/login" className="group px-8 py-3.5 rounded-xl gradient-primary text-primary-foreground font-semibold text-base glow-primary hover:opacity-90 transition-all flex items-center gap-2">
                 Launch Dashboard
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
@@ -209,7 +209,7 @@ export default function LandingPage() {
                 Join 2 million+ traders already using QuantumTrade AI to find better setups and manage risk.
               </motion.p>
               <motion.div variants={fadeUp} custom={2}>
-                <Link to="/dashboard" className="inline-flex items-center gap-2 px-8 py-4 rounded-xl gradient-primary text-primary-foreground font-semibold glow-primary hover:opacity-90 transition-all group">
+                <Link to="/login" className="inline-flex items-center gap-2 px-8 py-4 rounded-xl gradient-primary text-primary-foreground font-semibold glow-primary hover:opacity-90 transition-all group">
                   Start Trading Free
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>

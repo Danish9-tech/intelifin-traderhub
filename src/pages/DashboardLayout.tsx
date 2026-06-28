@@ -6,6 +6,8 @@ import {
   ChevronLeft, ChevronRight, Brain
 } from "lucide-react";
 import { Link, useLocation, Outlet } from "react-router-dom";
+import { toast } from "@/hooks/use-toast";
+import { useLogout } from "@/hooks/use-auth";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
@@ -25,8 +27,18 @@ const navItems = [
 export default function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const logout = useLogout();
   const currentNav = navItems.find((n) => n.path === location.pathname);
   const pageTitle = currentNav?.label || "Dashboard";
+
+  const handleLogout = async () => {
+    try {
+      await logout.mutateAsync();
+      toast({ title: "Signed out" });
+    } catch (error) {
+      toast({ title: "Sign out failed", description: error instanceof Error ? error.message : "Unexpected error", variant: "destructive" });
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -73,9 +85,14 @@ export default function DashboardLayout() {
       <div style={{ marginLeft: collapsed ? 72 : 240, transition: "margin-left 0.15s cubic-bezier(0.25, 0.1, 0.25, 1)" }} className="flex-1 min-h-screen flex flex-col">
         <header className="h-14 border-b border-border flex items-center justify-between px-6 bg-background/80 backdrop-blur-md sticky top-0 z-30">
           <h1 className="text-base font-semibold text-foreground">{pageTitle}</h1>
-          <div className="flex items-center gap-2 px-3 py-1 rounded-md bg-muted text-xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-profit animate-pulse-glow" />
-            <span className="text-muted-foreground">Markets Open</span>
+          <div className="flex items-center gap-2">
+            <div className="px-3 py-1 rounded-md bg-muted text-xs flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-profit animate-pulse-glow" />
+              <span className="text-muted-foreground">Markets Open</span>
+            </div>
+            <button onClick={handleLogout} className="text-xs px-3 py-1 rounded-md glass text-muted-foreground hover:text-foreground">
+              Logout
+            </button>
           </div>
         </header>
         <main className="flex-1 p-6">

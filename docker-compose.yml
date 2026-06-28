@@ -1,0 +1,16 @@
+version: "3.9"
+services:
+  traderhub:
+    build: .
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: 4000
+      DB_PATH: /app/server/data/traderhub.db
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+    volumes:
+      - traderhub_data:/app/server/data
+
+volumes:
+  traderhub_data:

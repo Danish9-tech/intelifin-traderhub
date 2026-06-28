@@ -1,27 +1,8 @@
 import { useState } from "react";
 import { Briefcase, TrendingUp, PieChart, Shield, Trash2, Plus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useAddHolding, useDeleteHolding, useHoldings, usePortfolioSummary } from "@/hooks/use-trading-data";
 
-interface Holding {
-  id: number;
-  asset: string;
-  symbol: string;
-  amount: string;
-  value: number;
-  pnl: number;
-  up: boolean;
-}
-
-const initialHoldings: Holding[] = [
-  { id: 1, asset: "Bitcoin", symbol: "BTC", amount: "1.42", value: 95754, pnl: 12340, up: true },
-  { id: 2, asset: "Ethereum", symbol: "ETH", amount: "12.5", value: 48640, pnl: 5890, up: true },
-  { id: 3, asset: "Apple", symbol: "AAPL", amount: "150", value: 29768, pnl: 2140, up: true },
-  { id: 4, asset: "Gold", symbol: "XAU", amount: "5 oz", value: 11709, pnl: 430, up: true },
-  { id: 5, asset: "Euro (Forex)", symbol: "EUR/USD", amount: "50k", value: 18200, pnl: -320, up: false },
-  { id: 6, asset: "Solana", symbol: "SOL", amount: "145", value: 24991, pnl: -1240, up: false },
-];
-
-// Mini chart SVG
 function MiniChart({ up = true }: { up?: boolean }) {
   const points = up
     ? "0,40 15,35 30,38 45,25 60,28 75,15 90,18 105,10 120,12"
@@ -34,40 +15,52 @@ function MiniChart({ up = true }: { up?: boolean }) {
 }
 
 export default function PortfolioPage() {
-  const [holdings, setHoldings] = useState(initialHoldings);
+  const { data: holdings = [], isLoading } = useHoldings();
+  const { data: summary } = usePortfolioSummary();
+  const addHolding = useAddHolding();
+  const deleteHolding = useDeleteHolding();
+
   const [showAdd, setShowAdd] = useState(false);
   const [newAsset, setNewAsset] = useState("");
   const [newSymbol, setNewSymbol] = useState("");
   const [newAmount, setNewAmount] = useState("");
   const [newValue, setNewValue] = useState("");
 
-  const totalValue = holdings.reduce((a, h) => a + h.value, 0);
-  const totalPnl = holdings.reduce((a, h) => a + h.pnl, 0);
+  const totalValue = summary?.totalValue ?? 0;
+  const totalPnl = summary?.totalPnl ?? 0;
 
-  const removeHolding = (id: number) => {
-    const h = holdings.find((x) => x.id === id);
-    setHoldings((prev) => prev.filter((x) => x.id !== id));
-    toast({ title: `${h?.asset} removed from portfolio`, variant: "destructive" });
+  const removeHolding = async (id: number, asset: string) => {
+    try {
+      await deleteHolding.mutateAsync(id);
+      toast({ title: `${asset} removed from portfolio`, variant: "destructive" });
+    } catch (error) {
+      toast({ title: "Delete failed", description: error instanceof Error ? error.message : "Unexpected error", variant: "destructive" });
+    }
   };
 
-  const addHolding = () => {
-    if (!newAsset || !newSymbol || !newValue) {
+  const submitHolding = async () => {
+    if (!newAsset || !newSymbol || !newValue || !newAmount) {
       toast({ title: "Fill in all fields", variant: "destructive" });
       return;
     }
-    const h: Holding = {
-      id: Date.now(),
-      asset: newAsset,
-      symbol: newSymbol.toUpperCase(),
-      amount: newAmount || "1",
-      value: parseFloat(newValue),
-      pnl: Math.round((Math.random() - 0.3) * 3000),
-      up: Math.random() > 0.3,
-    };
-    setHoldings((prev) => [...prev, h]);
-    toast({ title: `${newAsset} added to portfolio` });
-    setShowAdd(false);
-    setNewAsset(""); setNewSymbol(""); setNewAmount(""); setNewValue("");
+
+    try {
+      await addHolding.mutateAsync({
+        asset: newAsset,
+        symbol: newSymbol,
+        amount: Number(newAmount),
+        value: Number(newValue),
+        pnl: 0,
+      });
+      toast({ title: `${newAsset} added to portfolio` });
+      setShowAdd(false);
+      setNewAsset("");
+      setNewSymbol("");
+      setNewAmount("");
+      setNewValue("");
+    } catch (error) {
+      toast({ title: "Create failed", description: error instanceof Error ? error.message : "Unexpected error", variant: "destructive" });
+    }
   };
 
   return (
@@ -83,32 +76,30 @@ export default function PortfolioPage() {
         </div>
         <div className="glass rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2"><PieChart className="w-4 h-4 text-primary" /><span className="text-xs text-muted-foreground">Assets</span></div>
-          <p className="text-xl font-bold font-mono-num text-foreground">{holdings.length}</p>
+          <p className="text-xl font-bold font-mono-num text-foreground">{summary?.count ?? 0}</p>
         </div>
         <div className="glass rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2"><Shield className="w-4 h-4 text-primary" /><span className="text-xs text-muted-foreground">Risk Score</span></div>
-          <p className="text-xl font-bold text-foreground">{holdings.length > 4 ? "Medium" : "High"}</p>
+          <p className="text-xl font-bold text-foreground">{(summary?.count ?? 0) > 4 ? "Medium" : "High"}</p>
         </div>
       </div>
 
-      {/* Allocation bar */}
       <div className="glass rounded-2xl p-5">
         <h3 className="text-sm font-semibold text-foreground mb-4">Asset Allocation</h3>
         <div className="flex gap-0.5 h-4 rounded-full overflow-hidden">
           {holdings.map((h, i) => {
-            const pct = (h.value / totalValue) * 100;
+            const pct = totalValue > 0 ? (h.value / totalValue) * 100 : 0;
             const colors = ["bg-primary", "bg-secondary", "bg-profit", "bg-loss", "bg-muted-foreground", "bg-accent-foreground/50", "bg-primary/60", "bg-secondary/60"];
             return <div key={h.id} className={`${colors[i % colors.length]} transition-all`} style={{ width: `${pct}%` }} title={`${h.symbol}: ${pct.toFixed(1)}%`} />;
           })}
         </div>
         <div className="flex flex-wrap gap-4 mt-3">
           {holdings.map((h) => (
-            <span key={h.id} className="text-xs text-muted-foreground">{h.symbol}: {((h.value / totalValue) * 100).toFixed(1)}%</span>
+            <span key={h.id} className="text-xs text-muted-foreground">{h.symbol}: {totalValue > 0 ? ((h.value / totalValue) * 100).toFixed(1) : "0.0"}%</span>
           ))}
         </div>
       </div>
 
-      {/* Add holding */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-foreground">Holdings</h3>
         <button onClick={() => setShowAdd(!showAdd)} className="flex items-center gap-2 px-4 py-2 rounded-lg gradient-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
@@ -121,14 +112,13 @@ export default function PortfolioPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <input value={newAsset} onChange={(e) => setNewAsset(e.target.value)} placeholder="Asset name" className="bg-muted rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary" />
             <input value={newSymbol} onChange={(e) => setNewSymbol(e.target.value)} placeholder="Symbol" className="bg-muted rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary" />
-            <input value={newAmount} onChange={(e) => setNewAmount(e.target.value)} placeholder="Amount" className="bg-muted rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary" />
+            <input value={newAmount} onChange={(e) => setNewAmount(e.target.value)} placeholder="Amount" type="number" className="bg-muted rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary" />
             <input value={newValue} onChange={(e) => setNewValue(e.target.value)} placeholder="Value ($)" type="number" className="bg-muted rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary" />
           </div>
-          <button onClick={addHolding} className="px-5 py-2 rounded-lg gradient-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">Add to Portfolio</button>
+          <button onClick={submitHolding} className="px-5 py-2 rounded-lg gradient-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">Add to Portfolio</button>
         </div>
       )}
 
-      {/* Holdings table */}
       <div className="glass rounded-2xl overflow-hidden">
         <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-4 px-5 py-3 border-b border-border text-xs font-medium text-muted-foreground">
           <span>Asset</span>
@@ -138,7 +128,8 @@ export default function PortfolioPage() {
           <span className="text-right w-24">P&L</span>
           <span className="w-8" />
         </div>
-        {holdings.map((h) => (
+        {isLoading && <div className="px-5 py-8 text-center text-sm text-muted-foreground">Loading holdings...</div>}
+        {!isLoading && holdings.map((h) => (
           <div key={h.id} className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-4 px-5 py-3 border-b border-border/50 items-center hover:bg-muted/30 transition-colors">
             <div>
               <p className="text-sm font-medium text-foreground">{h.asset}</p>
@@ -146,9 +137,9 @@ export default function PortfolioPage() {
             </div>
             <span className="text-sm font-mono-num text-foreground text-right w-24">{h.amount}</span>
             <span className="text-sm font-mono-num text-foreground text-right w-24">${h.value.toLocaleString()}</span>
-            <div className="w-16"><MiniChart up={h.up} /></div>
+            <div className="w-16"><MiniChart up={h.pnl >= 0} /></div>
             <span className={`text-sm font-mono-num font-semibold text-right w-24 ${h.pnl >= 0 ? "text-profit" : "text-loss"}`}>{h.pnl >= 0 ? "+" : ""}${h.pnl.toLocaleString()}</span>
-            <button onClick={() => removeHolding(h.id)} className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-loss transition-colors">
+            <button onClick={() => removeHolding(h.id, h.asset)} className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-loss transition-colors">
               <Trash2 className="w-4 h-4" />
             </button>
           </div>
