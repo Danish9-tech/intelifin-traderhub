@@ -63,11 +63,21 @@ function toDuration(iso: string): string {
 export async function buildApp(options: BuildAppOptions = {}) {
   const db = await openDatabase(options.dbPath);
   const app = express();
+  const allowedOrigins = (process.env.CLIENT_ORIGIN || "http://localhost:8080")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
 
   app.use(helmet());
   app.use(
     cors({
-      origin: process.env.CLIENT_ORIGIN || true,
+      origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+          return;
+        }
+        callback(new Error("Origin not allowed by CORS"));
+      },
       credentials: true,
     }),
   );
@@ -516,6 +526,13 @@ export async function buildApp(options: BuildAppOptions = {}) {
         });
 
         if (process.env.NODE_ENV === "production") {
+          const staticLimiter = rateLimit({
+            windowMs: 60_000,
+            max: 60,
+            standardHeaders: true,
+            legacyHeaders: false,
+          });
+          app.use(staticLimiter);
           app.use(express.static(distPath));
           app.get("*", (req, res, next) => {
             if (req.path.startsWith("/api")) {
