@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import DashboardLayout from "./pages/DashboardLayout";
+import LoginPage from "./pages/LoginPage";
 import DashboardHome from "./pages/DashboardHome";
 import MarketsPage from "./pages/MarketsPage";
 import ChartsPage from "./pages/ChartsPage";
@@ -18,6 +19,7 @@ import MarketplacePage from "./pages/MarketplacePage";
 import AcademyPage from "./pages/AcademyPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -29,7 +31,8 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/dashboard" element={<DashboardLayout />}>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
             <Route index element={<DashboardHome />} />
             <Route path="markets" element={<MarketsPage />} />
             <Route path="charts" element={<ChartsPage />} />

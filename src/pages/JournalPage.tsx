@@ -1,34 +1,16 @@
 import { useState } from "react";
 import { Plus, Calendar, TrendingUp, TrendingDown, Tag, Trash2, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-
-interface JournalEntry {
-  id: number;
-  date: string;
-  pair: string;
-  type: "Long" | "Short";
-  entry: string;
-  exit: string;
-  pnl: number;
-  emotion: string;
-  tags: string[];
-  notes: string;
-}
-
-const initialEntries: JournalEntry[] = [
-  { id: 1, date: "Mar 7, 2026", pair: "BTC/USD", type: "Long", entry: "66,890", exit: "67,850", pnl: 1240, emotion: "Confident", tags: ["Breakout", "Trend"], notes: "Clean break above resistance with volume confirmation." },
-  { id: 2, date: "Mar 6, 2026", pair: "EUR/USD", type: "Short", entry: "1.0912", exit: "1.0935", pnl: -180, emotion: "FOMO", tags: ["Counter-trend"], notes: "Entered too early, should have waited for confirmation." },
-  { id: 3, date: "Mar 5, 2026", pair: "ETH/USD", type: "Long", entry: "3,750", exit: "3,920", pnl: 680, emotion: "Calm", tags: ["Pullback", "Support"], notes: "Nice pullback to EMA 20 support. Textbook entry." },
-  { id: 4, date: "Mar 4, 2026", pair: "NVDA", type: "Long", entry: "845.20", exit: "868.50", pnl: 340, emotion: "Confident", tags: ["Earnings", "Momentum"], notes: "Post-earnings momentum play. Hit TP1." },
-  { id: 5, date: "Mar 3, 2026", pair: "SOL/USD", type: "Short", entry: "178.40", exit: "172.10", pnl: 520, emotion: "Calm", tags: ["Breakdown", "Volume"], notes: "Breakdown below support with high volume." },
-  { id: 6, date: "Mar 2, 2026", pair: "GBP/USD", type: "Long", entry: "1.2680", exit: "1.2650", pnl: -240, emotion: "Anxious", tags: ["News"], notes: "BoE speech caught me off guard. Tight stop hit." },
-];
+import { useCreateJournalEntry, useDeleteJournalEntry, useJournalEntries } from "@/hooks/use-trading-data";
 
 const emotions = ["Confident", "Calm", "Anxious", "FOMO", "Greedy", "Fearful", "Neutral"];
 const tagOptions = ["Breakout", "Trend", "Pullback", "Support", "Resistance", "Counter-trend", "Momentum", "News", "Earnings", "Volume", "Breakdown", "Scalp"];
 
 export default function JournalPage() {
-  const [entries, setEntries] = useState(initialEntries);
+  const { data: entries = [], isLoading } = useJournalEntries();
+  const createEntry = useCreateJournalEntry();
+  const deleteEntryMutation = useDeleteJournalEntry();
+
   const [showNew, setShowNew] = useState(false);
   const [filter, setFilter] = useState<"All" | "Winners" | "Losers">("All");
   const [newPair, setNewPair] = useState("");
@@ -52,38 +34,48 @@ export default function JournalPage() {
     setNewTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
   };
 
-  const submitEntry = () => {
+  const submitEntry = async () => {
     if (!newPair || !newEntry || !newExit) {
       toast({ title: "Please fill in all fields", variant: "destructive" });
       return;
     }
-    const pnl = (Math.random() - 0.3) * 2000;
-    const entry: JournalEntry = {
-      id: Date.now(),
-      date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-      pair: newPair,
-      type: newType,
-      entry: newEntry,
-      exit: newExit,
-      pnl: Math.round(pnl),
-      emotion: newEmotion,
-      tags: newTags,
-      notes: newNotes || "No notes added.",
-    };
-    setEntries((prev) => [entry, ...prev]);
-    toast({ title: "Trade logged!", description: `${newPair} ${newType} · P&L: ${pnl >= 0 ? "+" : ""}$${Math.round(pnl)}` });
-    setShowNew(false);
-    setNewPair(""); setNewEntry(""); setNewExit(""); setNewNotes(""); setNewTags([]);
+
+    try {
+      await createEntry.mutateAsync({
+        pair: newPair,
+        type: newType,
+        entry: newEntry,
+        exit: newExit,
+        pnl: 0,
+        emotion: newEmotion,
+        tags: newTags,
+        notes: newNotes || "No notes added.",
+      });
+      toast({ title: "Trade logged" });
+      setShowNew(false);
+      setNewPair("");
+      setNewEntry("");
+      setNewExit("");
+      setNewNotes("");
+      setNewTags([]);
+    } catch (error) {
+      toast({ title: "Create failed", description: error instanceof Error ? error.message : "Unexpected error", variant: "destructive" });
+    }
   };
 
-  const deleteEntry = (id: number) => {
-    setEntries((prev) => prev.filter((e) => e.id !== id));
-    toast({ title: "Trade entry deleted", variant: "destructive" });
+  const deleteEntry = async (id: number) => {
+    try {
+      await deleteEntryMutation.mutateAsync(id);
+      toast({ title: "Trade entry deleted", variant: "destructive" });
+    } catch (error) {
+      toast({ title: "Delete failed", description: error instanceof Error ? error.message : "Unexpected error", variant: "destructive" });
+    }
   };
+
+  const bestTrade = entries.length ? Math.max(...entries.map((e) => e.pnl)) : 0;
 
   return (
     <div className="space-y-6">
-      {/* Stats bar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="glass rounded-xl p-3 text-center">
           <p className="text-xs text-muted-foreground">Total Trades</p>
@@ -99,7 +91,7 @@ export default function JournalPage() {
         </div>
         <div className="glass rounded-xl p-3 text-center">
           <p className="text-xs text-muted-foreground">Best Trade</p>
-          <p className="text-lg font-bold font-mono-num text-profit">+${Math.max(...entries.map((e) => e.pnl)).toLocaleString()}</p>
+          <p className="text-lg font-bold font-mono-num text-profit">+${bestTrade.toLocaleString()}</p>
         </div>
       </div>
 
@@ -147,12 +139,12 @@ export default function JournalPage() {
         </div>
       )}
 
-      {/* Entries */}
       <div className="space-y-3">
-        {filtered.length === 0 && (
+        {isLoading && <div className="glass rounded-xl p-8 text-center text-sm text-muted-foreground">Loading entries...</div>}
+        {!isLoading && filtered.length === 0 && (
           <div className="glass rounded-xl p-8 text-center text-sm text-muted-foreground">No trades found for this filter.</div>
         )}
-        {filtered.map((entry) => (
+        {!isLoading && filtered.map((entry) => (
           <div key={entry.id} className="glass rounded-xl p-5 hover:border-primary/20 transition-colors">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
